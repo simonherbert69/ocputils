@@ -34,16 +34,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	grouplist, err := userclient.Groups().List(metav1.ListOptions{})
-	if err != nil {
-		log.Fatal(err)
+	var groupList []v1.Group
+	if *showGroup != "" {
+		group, err := userclient.Groups().Get(*showGroup, metav1.GetOptions{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		groupList = append(groupList, *group)
+	} else {
+		groups, err := userclient.Groups().List(metav1.ListOptions{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		groupList = append(groupList, groups.Items...)
 	}
 
-	for _, group := range grouplist.Items {
-
-		if *showGroup != "" && group.Name != *showGroup {
-			continue
-		}
+	for _, group := range groupList {
 
 		if *useSimpleOutput {
 			printGroupSimple(group)
