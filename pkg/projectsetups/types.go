@@ -7,10 +7,11 @@ import (
 	"strings"
 )
 
+type Role string
 const (
-	RoleBuild   = "build"
-	RoleDeploy  = "deploy"
-	RolePromote = "promote"
+	RoleBuild Role   = "build"
+	RoleDeploy Role = "deploy"
+	RolePromote Role = "promote"
 )
 
 func getOrRegisterProjectsetup(allProjectsetups map[string]*Projectsetup, name string) *Projectsetup {

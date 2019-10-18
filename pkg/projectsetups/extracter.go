@@ -11,6 +11,25 @@ import (
 	"strings"
 )
 
+// suffixRoleMappings drives the mapping and grouping logic. Only namespaces with suffixes in this map will go into
+// a Projectsetup as one of the namespaces.
+var suffixRoleMappings = map[string]Role {
+	"-ci": RoleBuild,
+
+	"-sit":RoleDeploy,
+	"-brumm":RoleDeploy,
+	"-nasse":RoleDeploy,
+	"-tussi":RoleDeploy,
+	"-dev":RoleDeploy,
+	"-test":RoleDeploy,
+	"-atest":RoleDeploy,
+	"-itest":RoleDeploy,
+	"-at":RoleDeploy,
+	"-it":RoleDeploy,
+
+	"-prod-ready":RolePromote,
+}
+
 type Extracter struct {
 	Authclient     *authclientv1.AuthorizationV1Client
 	Projectsclient *projectclientv1.ProjectV1Client
@@ -42,30 +61,10 @@ func (e Extracter) ExtractProjectsetups() ([]*Projectsetup, []projectv1.Project)
 
 		var p *Projectsetup
 		var role string
-		if strings.HasSuffix(ns.Name, "-ci") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-ci"))
-			role = RoleBuild
-		} else if strings.HasSuffix(ns.Name, "-sit") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-sit"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-brumm") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-brumm"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-nasse") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-nasse"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-tussi") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-tussi"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-dev") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-dev"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-test") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-test"))
-			role = RoleDeploy
-		} else if strings.HasSuffix(ns.Name, "-prod-ready") {
-			p = getOrRegisterProjectsetup(allProjectsetups, strings.TrimSuffix(ns.Name, "-prod-ready"))
-			role = RolePromote
+
+		if ok, detectedRole, basename := stripAndIdentifyRole(ns.Name); ok {
+			p = getOrRegisterProjectsetup(allProjectsetups, basename)
+			role = string(detectedRole)
 		} else {
 			unmappedNamespaces = append(unmappedNamespaces, ns)
 			continue
@@ -93,9 +92,19 @@ func (e Extracter) ExtractProjectsetups() ([]*Projectsetup, []projectv1.Project)
 	return ps, unmappedNamespaces
 }
 
+func stripAndIdentifyRole(name string) (bool,Role,string) {
+	for suffix,role := range suffixRoleMappings {
+		if strings.HasSuffix(name, suffix) {
+			return true, role, strings.TrimSuffix(name,suffix)
+		}
+	}
+	return false,"",""
+}
+
 func (e Extracter) extractRolebindings(ps []*Projectsetup) {
 	for _, p := range ps {
 		for _, ns := range p.Namespaces {
+			_, _ = fmt.Fprint(os.Stderr, "*")
 			if rblist, err := e.Authclient.RoleBindings(ns.name).List(metav1.ListOptions{}); err == nil {
 				for _, rb := range rblist.Items {
 					_, _ = fmt.Fprint(os.Stderr, ".")

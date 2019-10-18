@@ -5,6 +5,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
+GOINSTALL=$(GOCMD) install
 
 listocpgroups :
 	$(GOBUILD) -o listocpgroups cmd/listocpgroups.go
@@ -19,3 +20,8 @@ all: listocpgroups listocpprojects extractprojectsetups
 
 clean :
 	rm -f listocpgroups listocpprojects extractprojectsetups
+
+install-all:
+	$(GOINSTALL) cmd/listocpgroups.go
+	$(GOINSTALL) cmd/listocpprojects.go
+	$(GOINSTALL) cmd/extractprojectsetups.go
