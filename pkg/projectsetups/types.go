@@ -43,7 +43,7 @@ func (p *Projectsetup) addOwnerGroup(name string) {
 }
 
 func (p Projectsetup) WriteProjectsetupDefinition(w io.Writer) {
-	_, _ = fmt.Fprintf(w, "apiVersion: management.telenor.no/projectv1\n")
+	_, _ = fmt.Fprintf(w, "apiVersion: management.telenor.no/v1\n")
 	_, _ = fmt.Fprintf(w, "kind: Projectsetup\n")
 	_, _ = fmt.Fprintf(w, "metadata:\n")
 	_, _ = fmt.Fprintf(w, "  name: %s\n", p.Name)
