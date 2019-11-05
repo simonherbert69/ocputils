@@ -54,11 +54,15 @@ func main() {
 
 	if *exportDefinitions != "" {
 		for _, group := range groupList {
-			if f, err := os.Create(path.Join(*exportDefinitions, group.Name + ".txt") ); err != nil {
-				printGroupSimple(f, group)
-				if err := f.Close(); err != nil {
-					fmt.Printf("Error closing file: %s", err)
-				}
+			f, err := os.Create(path.Join(*exportDefinitions, group.Name + ".txt") )
+			if err != nil {
+				fmt.Printf("Failed to write file: %s\n", err)
+				os.Exit(1)
+			}
+			printGroupSimple(f, group)
+			_ = f.Sync()
+			if err := f.Close(); err != nil {
+				fmt.Printf("Error closing file: %s", err)
 			}
 		}
 		fmt.Printf("Wrote %d group definitions to %s\n", len(groupList), *exportDefinitions)
