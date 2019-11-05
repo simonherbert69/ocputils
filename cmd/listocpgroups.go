@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 	"text/tabwriter"
 )
 
@@ -80,8 +81,14 @@ func main() {
 }
 
 func printGroupSimple(w io.Writer, group v1.Group) {
-	_, _ = fmt.Fprintf(w, "\n%s\n", group.Name)
+	var users []string
 	for _, user := range group.Users {
+		users = append(users, user)
+	}
+	sort.Strings(users)
+
+	_, _ = fmt.Fprintf(w, "\n%s\n", group.Name)
+	for _, user := range users {
 		_, _ = fmt.Fprintln(w, user)
 	}
 	_, _ = fmt.Fprintf(w, "\n")
