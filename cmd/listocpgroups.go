@@ -7,9 +7,11 @@ import (
 	"github.com/kschjeld/ocputils/pkg/usercache"
 	"github.com/openshift/api/user/v1"
 	userv1 "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
+	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"os"
+	"path"
 	"text/tabwriter"
 )
 
@@ -17,6 +19,7 @@ func main() {
 
 	showGroup := flag.String("group", "", "Group to show, or empty to show all")
 	useSimpleOutput := flag.Bool("simple", false, "Show output using simple Ansible Tower compatible formatting")
+	exportDefinitions := flag.String("export", "", "Export definitions into simple text-files in given directory, one pr group")
 	flag.Parse()
 
 	config, err := clienthelper.NewOCPClientWithUserconfig()
@@ -49,22 +52,35 @@ func main() {
 		groupList = append(groupList, groups.Items...)
 	}
 
+	if *exportDefinitions != "" {
+		for _, group := range groupList {
+			if f, err := os.Create(path.Join(*exportDefinitions, group.Name + ".txt") ); err != nil {
+				printGroupSimple(f, group)
+				if err := f.Close(); err != nil {
+					fmt.Printf("Error closing file: %s", err)
+				}
+			}
+		}
+		fmt.Printf("Wrote %d group definitions to %s\n", len(groupList), *exportDefinitions)
+		return
+	}
+
 	for _, group := range groupList {
 
 		if *useSimpleOutput {
-			printGroupSimple(group)
+			printGroupSimple(os.Stdout, group)
 		} else {
 			printGroupFormatted(group, userinfo)
 		}
 	}
 }
 
-func printGroupSimple(group v1.Group) {
-	fmt.Printf("\n%s\n", group.Name)
+func printGroupSimple(w io.Writer, group v1.Group) {
+	_, _ = fmt.Fprintf(w, "\n%s\n", group.Name)
 	for _, user := range group.Users {
-		fmt.Println(user)
+		_, _ = fmt.Fprintln(w, user)
 	}
-	fmt.Printf("\n")
+	_, _ = fmt.Fprintf(w, "\n")
 }
 
 func printGroupFormatted(group v1.Group, cache *usercache.Usercache) {
